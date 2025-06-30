@@ -6,7 +6,9 @@ bash fetch_corpora.sh
 ```
 
 ```
-python prepare_medmentions.py --medmentions_dir corpora_sources/medmentions/st21pv --umls_dir ~/umls/2017AA-full/META/ --out_train medmentions_st21pv_train.xml.gz --out_val medmentions_st21pv_val.bioc.xml.gz --out_test medmentions_st21pv_test.bioc.xml.gz
+python prepare_medmentions.py --medmentions_dir corpora_sources/medmentions/st21pv --semantic_groups corpora_sources/medmentions/SemGroups.txt --out_train medmentions_st21pv_train.bioc.xml.gz --out_val medmentions_st21pv_val.bioc.xml.gz --out_test medmentions_st21pv_test.bioc.xml.gz
+
+python prepare_medmentions.py --medmentions_dir corpora_sources/medmentions/st21pv --semantic_groups corpora_sources/medmentions/SemGroups.txt --out_train medmentions_st21pv_finegrain_train.xml.gz --out_val medmentions_st21pv_finegrain_val.bioc.xml.gz --out_test medmentions_st21pv_finegrain_test.bioc.xml.gz --finegrained
 
 python prepare_ncbi_disease.py --ncbidisease_dir corpora_sources/NCBI-disease --out_train ncbi_disease_train.bioc.xml.gz --out_val ncbi_disease_val.bioc.xml.gz --out_test ncbi_disease_test.bioc.xml.gz
 
@@ -22,9 +24,11 @@ python prepare_gnormplus.py --gnormplus_dir corpora_sources/GNormPlusCorpus --ou
 
 
 ```
-python tune_ner.py --train_corpus ncbi_disease_train.bioc.xml.gz --val_corpus ncbi_disease_val.bioc.xml.gz --test_corpus ncbi_disease_test.bioc.xml.gz --n_trials 10 --output_dir bioner_ncbi_disease
-
 python tune_ner.py --train_corpus medmentions_st21pv_train.bioc.xml.gz --val_corpus medmentions_st21pv_val.bioc.xml.gz --test_corpus medmentions_st21pv_test.bioc.xml.gz --n_trials 10 --output_dir bioner_medmentions_st21pv
+
+python tune_ner.py --train_corpus medmentions_st21pv_finegrain_train.bioc.xml.gz --val_corpus medmentions_st21pv_finegrain_val.bioc.xml.gz --test_corpus medmentions_st21pv_finegrain_test.bioc.xml.gz --n_trials 10 --output_dir bioner_medmentions_st21pv_finegrain
+
+python tune_ner.py --train_corpus ncbi_disease_train.bioc.xml.gz --val_corpus ncbi_disease_val.bioc.xml.gz --test_corpus ncbi_disease_test.bioc.xml.gz --n_trials 10 --output_dir bioner_ncbi_disease
 
 python tune_ner.py --train_corpus nlmchem_train.bioc.xml.gz --val_corpus nlmchem_val.bioc.xml.gz --test_corpus nlmchem_test.bioc.xml.gz --n_trials 10 --output_dir bioner_nlmchem
 

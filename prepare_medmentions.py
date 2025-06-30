@@ -8,10 +8,11 @@ from utils import pubtator_to_bioc, save_bioc_docs
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--medmentions_dir',type=str,required=True,help='Directory with MedMentions files')
-    parser.add_argument('--umls_dir',type=str,required=True,help='Directory with UMLS files')
+    parser.add_argument('--semantic_groups',type=str,required=True,help='Semantic groups file')
     parser.add_argument('--out_train',type=str,required=True,help='Output Gzipped BioC XML file for training set')
     parser.add_argument('--out_val',type=str,required=True,help='Output Gzipped BioC XML file for validation set')
     parser.add_argument('--out_test',type=str,required=True,help='Output Gzipped BioC XML file for test set')
+    parser.add_argument('--finegrained',action='store_true',help='Use the semantic types instead of more general groups')
     args = parser.parse_args()
 
     print("Loading MedMentions...")
@@ -43,20 +44,20 @@ def main():
 
     print("Loading semantic types from UMLS...")
     semantic_types = {}
-    with open(f'{args.umls_dir}/MRSTY.RRF') as f:
+    with open(args.semantic_groups) as f:
         for line in f:
-            split = line.strip().split('|')
-            cui = split[0]
-            type_name = split[3]
-    
-            semantic_types[cui] = type_name
+            group_id,group_name,type_id,type_name = line.strip('\n').split('|')
 
-    print("Labelling annotations with semantic types...")
+            if args.finegrained:
+                semantic_types[type_id] = type_name
+            else:
+                semantic_types[type_id] = group_name
+            
+    print("Labelling annotations with semantic information...")
     for doc in train_docs + val_docs + test_docs:
         for passage in doc.passages:
             for anno in passage.annotations:
-                cui = anno.infons['concept_id'].removeprefix('UMLS:')
-                type_name = semantic_types.get(cui)
+                type_name = semantic_types[anno.infons['label']]
                 anno.infons['label'] = type_name
             passage.annotations = [ anno for anno in passage.annotations if anno.infons['label'] ]
 

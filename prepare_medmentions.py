@@ -3,31 +3,7 @@ from bioc import biocxml, pubtator
 import argparse
 import gzip
 
-def pubtator_to_bioc(doc):
-	bioc_doc = bioc.BioCDocument()
-	bioc_doc.id = doc.pmid
-	bioc_passage = bioc.BioCPassage()
-	bioc_passage.text = doc.text
-	bioc_passage.offset = 0
-	bioc_doc.add_passage(bioc_passage)
-
-	title = doc.text.split('\n')[0]
-	bioc_doc.infons['title'] = title
-
-	for a in doc.annotations:
-		bioc_anno = bioc.BioCAnnotation()
-		bioc_anno.infons['concept_id'] = a.id
-		bioc_anno.text = a.text
-		bioc_loc = bioc.BioCLocation(a.start,a.end-a.start)
-		bioc_anno.add_location(bioc_loc)
-		bioc_passage.add_annotation(bioc_anno)
-
-	return bioc_doc
-
-def save_bioc_docs(docs, filename):
-	collection = bioc.BioCCollection.of_documents(*docs)
-	with gzip.open(filename, 'wt', encoding='utf8') as f:
-		biocxml.dump(collection, f)
+from utils import pubtator_to_bioc, save_bioc_docs
 
 def main():
     parser = argparse.ArgumentParser()
@@ -81,8 +57,8 @@ def main():
             for anno in passage.annotations:
                 cui = anno.infons['concept_id'].removeprefix('UMLS:')
                 type_name = semantic_types.get(cui)
-                anno.infons['semantic_type'] = type_name
-            passage.annotations = [ anno for anno in passage.annotations if anno.infons['semantic_type'] ]
+                anno.infons['label'] = type_name
+            passage.annotations = [ anno for anno in passage.annotations if anno.infons['label'] ]
 
     print("Saving...")
     save_bioc_docs(train_docs, args.out_train)

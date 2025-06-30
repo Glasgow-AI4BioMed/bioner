@@ -12,7 +12,7 @@ def main():
     parser.add_argument('--out_train',type=str,required=True,help='Output Gzipped BioC XML file for training set')
     parser.add_argument('--out_val',type=str,required=True,help='Output Gzipped BioC XML file for validation set')
     parser.add_argument('--out_test',type=str,required=True,help='Output Gzipped BioC XML file for test set')
-    parser.add_argument('--finegrained',action='store_true',help='Use the semantic types instead of more general groups')
+    parser.add_argument('--finegrain',action='store_true',help='Use the semantic types instead of more general groups')
     args = parser.parse_args()
 
     print("Loading MedMentions...")
@@ -48,7 +48,7 @@ def main():
         for line in f:
             group_id,group_name,type_id,type_name = line.strip('\n').split('|')
 
-            if args.finegrained:
+            if args.finegrain:
                 semantic_types[type_id] = type_name
             else:
                 semantic_types[type_id] = group_name

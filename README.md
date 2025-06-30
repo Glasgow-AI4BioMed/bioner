@@ -10,7 +10,7 @@ mkdir datasets
 
 python prepare_medmentions.py --medmentions_dir corpora_sources/medmentions/st21pv --semantic_groups corpora_sources/medmentions/SemGroups.txt --out_train datasets/medmentions_st21pv_train.bioc.xml.gz --out_val datasets/medmentions_st21pv_val.bioc.xml.gz --out_test datasets/medmentions_st21pv_test.bioc.xml.gz
 
-python prepare_medmentions.py --medmentions_dir corpora_sources/medmentions/st21pv --semantic_groups corpora_sources/medmentions/SemGroups.txt --out_train datasets/medmentions_st21pv_finegrain_train.xml.gz --out_val datasets/medmentions_st21pv_finegrain_val.bioc.xml.gz --out_test datasets/medmentions_st21pv_finegrain_test.bioc.xml.gz --finegrained
+python prepare_medmentions.py --medmentions_dir corpora_sources/medmentions/st21pv --semantic_groups corpora_sources/medmentions/SemGroups.txt --out_train datasets/medmentions_st21pv_finegrain_train.xml.gz --out_val datasets/medmentions_st21pv_finegrain_val.bioc.xml.gz --out_test datasets/medmentions_st21pv_finegrain_test.bioc.xml.gz --finegrain
 
 python prepare_ncbi_disease.py --ncbidisease_dir corpora_sources/NCBI-disease --out_train datasets/ncbi_disease_train.bioc.xml.gz --out_val datasets/ncbi_disease_val.bioc.xml.gz --out_test datasets/ncbi_disease_test.bioc.xml.gz
 

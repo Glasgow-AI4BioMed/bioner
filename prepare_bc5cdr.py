@@ -2,10 +2,6 @@ from bioc import biocxml
 import gzip
 import argparse
 import os
-import json
-import xml.etree.ElementTree as ET
-
-from entitytools.file_formats import save_bioc_docs
 
 def main():
     parser = argparse.ArgumentParser(description='Convert BC5CDR corpus to BioCXML and set up a matching MeSH ontology')

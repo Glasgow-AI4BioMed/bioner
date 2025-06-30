@@ -1,5 +1,5 @@
 import bioc
-from bioc import biocxml, pubtator
+from bioc import biocxml
 import gzip
 
 def pubtator_to_bioc(doc):

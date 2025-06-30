@@ -1,8 +1,5 @@
-from bioc import biocxml, pubtator
-import gzip
+from bioc import pubtator
 import argparse
-import os
-import json
 from sklearn.model_selection import train_test_split
 
 from utils import pubtator_to_bioc, save_bioc_docs

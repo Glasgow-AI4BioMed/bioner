@@ -1,5 +1,4 @@
-import bioc
-from bioc import biocxml, pubtator
+from bioc import pubtator
 import argparse
 import gzip
 

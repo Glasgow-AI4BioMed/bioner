@@ -1,9 +1,6 @@
 from bioc import biocxml
-import gzip
 import argparse
 import os
-import json
-import xml.etree.ElementTree as ET
 
 from utils import save_bioc_docs
 

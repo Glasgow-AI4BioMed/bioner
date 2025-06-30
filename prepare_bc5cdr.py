@@ -28,9 +28,8 @@ def main():
     print("Reformatting BioC XML annotations...")
     for doc in train_collection.documents + val_collection.documents + test_collection.documents:
         for passage in doc.passages:
-            #passage.annotations = [ anno for anno in passage.annotations if anno.infons['MESH'] != '-1' and '|' not in anno.infons['MESH'] ]
             for anno in passage.annotations:
-                anno.infons = { 'label': f"MESH:{anno.infons['type']}" }
+                anno.infons = { 'label': anno.infons['type'] }
 
     print("Removing non-contiguous annotations...")
     for doc in train_collection.documents + val_collection.documents + test_collection.documents:

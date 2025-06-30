@@ -135,6 +135,30 @@ class SaveBestModelCallback(TrainerCallback):
             print(f"New best model found! {metric_name} = {current_metric:.4f}. Saving to {self.save_path}")
             self.trainer.save_model(self.save_path)
 
+
+def classification_report_to_markdown(report_dict):
+    headers = ["Label", "Precision", "Recall", "F1-score", "Support"]
+    rows = []
+
+    for label, metrics in report_dict.items():
+        if isinstance(metrics, dict):
+            row = [
+                label,
+                f"{metrics['precision']:.2f}",
+                f"{metrics['recall']:.2f}",
+                f"{metrics['f1-score']:.2f}",
+                f"{metrics['support']:.0f}"
+            ]
+            rows.append(row)
+
+    # Markdown table format
+    table = "| " + " | ".join(headers) + " |\n"
+    table += "| " + " | ".join(["---"] * len(headers)) + " |\n"
+    for row in rows:
+        table += "| " + " | ".join(row) + " |\n"
+
+    return table
+
 def run_classification_report(trainer, dataset, id2label, labels):
 
     results = trainer.predict(dataset)
@@ -150,9 +174,54 @@ def run_classification_report(trainer, dataset, id2label, labels):
         label_id for prediction, label_id in zip(predictions, label_ids) if label_id != -100
     ]
     
-    return classification_report(nonmasked_label_ids, nonmasked_predictions, labels=sorted(id2label.keys()), target_names=labels, zero_division=0.0)
-    
+    report_dict = classification_report(nonmasked_label_ids, nonmasked_predictions, labels=sorted(id2label.keys()), target_names=labels, zero_division=0.0, output_dict=True)
 
+    return classification_report_to_markdown(report_dict)
+
+def make_hyperparamter_table(hyperparameters):
+    headers = ["Hyperparameter", "Value"]
+    table = f"| {headers[0]} | {headers[1]} |\n"
+    table += f"|{'-' * (len(headers[0]) + 2)}|{'-' * (len(headers[1]) + 2)}|\n"
+    
+    for key, value in hyperparameters.items():
+        table += f"| {key} | {value} |\n"
+    
+    return table
+
+def prepare_repo(model_name, base_model, annotated_labels, n_trials, hyperparameters, train_report, val_report, test_report, model_card_template_filename, dataset_info_filename):
+
+    with open(model_card_template_filename) as f:
+        model_card_template = f.read()
+        
+    with open(dataset_info_filename) as f:
+        dataset_info = f.read()
+
+    nice_labels = ", ".join(annotated_labels[:-1]) + f" and {annotated_labels[-1]}"
+    label_count = len(annotated_labels)
+
+    hyperparameter_table = make_hyperparamter_table(hyperparameters)
+
+    readme = model_card_template.format(
+        model_name=model_name,
+        base_model=base_model,
+        nice_labels=nice_labels,
+        label_count=label_count,
+        dataset_info=dataset_info,
+        n_trials=n_trials,
+        hyperparameter_table=hyperparameter_table,
+        test_report=test_report,
+    )
+
+    with open(f"{model_name}/report_train.md", "w") as f:
+        f.write(train_report)
+    with open(f"{model_name}/report_val.md", "w") as f:
+        f.write(val_report)
+    with open(f"{model_name}/report_test.md", "w") as f:
+        f.write(test_report)
+        
+    with open(f"{model_name}/README.md", "w") as f:
+        f.write(readme)
+                 
 def main():
     parser = argparse.ArgumentParser('Run hyperparameter tuning for an NER model and save out the best')
     parser.add_argument('--train_corpus',type=str,required=True,help='Gzipped BioC XML corpus for training')
@@ -160,7 +229,9 @@ def main():
     parser.add_argument('--test_corpus',type=str,required=True,help='Gzipped BioC XML corpus for testing')
     parser.add_argument('--n_trials',type=int,required=True,help='Number of trials to run when tuning')
     parser.add_argument('--wandb_name',type=str,required=False,help="Project name for wandb (or don't use wandb if not provided)")
-    parser.add_argument('--output_dir',type=str,required=True,help='Directory to save final model to')
+    parser.add_argument('--model_name',type=str,required=True,help='Name of model to save (and output directory)')
+    parser.add_argument('--model_card_template',type=str,required=True,help='Markdown file with template of model_card')
+    parser.add_argument('--dataset_info',type=str,required=True,help='Markdown file with dataset information')
     args = parser.parse_args()
 
     with gzip.open(args.train_corpus, 'rt', encoding='utf8') as f:
@@ -193,14 +264,14 @@ def main():
     if args.wandb_name:
         os.environ["WANDB_PROJECT"] = args.wandb_name
 
-    tokenizer.save_pretrained(args.output_dir)
+    tokenizer.save_pretrained(args.model_name)
     
     early_stopping_callback = EarlyStoppingCallback(
         early_stopping_patience=3,
         early_stopping_threshold=0.001
     )
     
-    save_best_model_callback = SaveBestModelCallback(args.output_dir)
+    save_best_model_callback = SaveBestModelCallback(args.model_name)
     
     unique_info = f'{socket.gethostname()}_{os.getpid()}'
     tmp_model_dir = f"tmp_mentiondetector_{unique_info}"
@@ -213,7 +284,7 @@ def main():
         load_best_model_at_end=True,
         greater_is_better=True,
         seed=42,
-        num_train_epochs=32,
+        num_train_epochs=1,
         report_to=("wandb" if args.wandb_name else "none")
     )
 
@@ -244,6 +315,7 @@ def main():
 
     best_trial = trainer.hyperparameter_search(
         hp_space=hp_space,
+        backend="optuna",
         compute_objective=lambda metrics: metrics["eval_macro_f1"],
         n_trials=args.n_trials,
         direction="maximize",
@@ -254,22 +326,17 @@ def main():
     # Remove temporary directory
     shutil.rmtree(tmp_model_dir)
 
-    with open(f"{args.output_dir}/best_hyperparameters.json", "w") as f:
+    with open(f"{args.model_name}/best_hyperparameters.json", "w") as f:
         json.dump(best_trial.hyperparameters, f, indent=2)
 
     # Load up the best model
-    trainer.model = AutoModelForTokenClassification.from_pretrained(args.output_dir).to(trainer.args.device)
+    trainer.model = AutoModelForTokenClassification.from_pretrained(args.model_name).to(trainer.args.device)
     
     train_report = run_classification_report(trainer, train_dataset, id2label, labels)
     val_report = run_classification_report(trainer, val_dataset, id2label, labels)
     test_report = run_classification_report(trainer, test_dataset, id2label, labels)
 
-    with open(f"{args.output_dir}/train_report.txt", "w") as f:
-        f.write(train_report)
-    with open(f"{args.output_dir}/val_report.txt", "w") as f:
-        f.write(val_report)
-    with open(f"{args.output_dir}/test_report.txt", "w") as f:
-        f.write(test_report)
+    prepare_repo(args.model_name, base_model, annotated_labels, args.n_trials, best_trial.hyperparameters, train_report, val_report, test_report, args.model_card_template, args.dataset_info)
 
     print("="*80)
     print("TEST REPORT:\n\n")

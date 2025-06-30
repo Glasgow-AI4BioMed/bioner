@@ -10,6 +10,8 @@ from datasets import Dataset
 import os
 import json
 import argparse
+import socket
+import shutil
 
 def tokenize_and_label(text, spans, tokenizer, label2id):
 
@@ -200,8 +202,10 @@ def main():
     
     save_best_model_callback = SaveBestModelCallback(args.output_dir)
     
+    unique_info = f'{socket.gethostname()}_{os.getpid()}'
+    tmp_model_dir = f"tmp_mentiondetector_{unique_info}"
     training_args = TrainingArguments(
-        output_dir="./tmp_ner_model",
+        output_dir=tmp_model_dir,
         eval_strategy="epoch",
         save_strategy="epoch",
         logging_dir="./logs",
@@ -246,6 +250,9 @@ def main():
     )
 
     print(best_trial)
+
+    # Remove temporary directory
+    shutil.rmtree(tmp_model_dir)
 
     with open(f"{args.output_dir}/best_hyperparameters.json", "w") as f:
         json.dump(best_trial.hyperparameters, f, indent=2)

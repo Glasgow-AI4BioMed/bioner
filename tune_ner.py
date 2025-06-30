@@ -59,7 +59,7 @@ def make_dataset(collection, tokenizer, label2id):
             for anno in passage.annotations:
                 loc = anno.total_span
                 start,end = loc.offset-passage.offset, loc.offset+loc.length-passage.offset
-                spans.append( (start,end,anno.infons['semantic_type']) )
+                spans.append( (start,end,anno.infons['label']) )
     
             text = passage.text
     
@@ -157,6 +157,7 @@ def main():
     parser.add_argument('--val_corpus',type=str,required=True,help='Gzipped BioC XML corpus for validation')
     parser.add_argument('--test_corpus',type=str,required=True,help='Gzipped BioC XML corpus for testing')
     parser.add_argument('--n_trials',type=int,required=True,help='Number of trials to run when tuning')
+    parser.add_argument('--wandb_name',type=str,required=False,help="Project name for wandb (or don't use wandb if not provided)")
     parser.add_argument('--output_dir',type=str,required=True,help='Directory to save final model to')
     args = parser.parse_args()
 
@@ -167,8 +168,8 @@ def main():
     with gzip.open(args.test_corpus, 'rt', encoding='utf8') as f:
         test_collection = biocxml.load(f)
 
-    semantic_types = sorted(set( anno.infons['semantic_type'] for doc in train_collection.documents+val_collection.documents+test_collection.documents for passage in doc.passages for anno in passage.annotations ))
-    labels = ['O'] + [ f'{prefix}-{semantic_type}' for semantic_type in semantic_types for prefix in ['B','I'] ]
+    annotated_labels = sorted(set( anno.infons['label'] for doc in train_collection.documents+val_collection.documents+test_collection.documents for passage in doc.passages for anno in passage.annotations ))
+    labels = ['O'] + [ f'{prefix}-{label}' for label in annotated_labels for prefix in ['B','I'] ]
     id2label = { idx:label for idx,label in enumerate(labels) }
     label2id = { label:idx for idx,label in enumerate(labels) }
 
@@ -187,7 +188,8 @@ def main():
 
     data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
 
-    os.environ["WANDB_PROJECT"] = "medmentions_ner"
+    if args.wandb_name:
+        os.environ["WANDB_PROJECT"] = args.wandb_name
 
     tokenizer.save_pretrained(args.output_dir)
     
@@ -208,6 +210,7 @@ def main():
         greater_is_better=True,
         seed=42,
         num_train_epochs=32,
+        report_to=("wandb" if args.wandb_name else "none")
     )
 
     def model_init():

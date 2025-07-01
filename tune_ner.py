@@ -284,7 +284,7 @@ def main():
         load_best_model_at_end=True,
         greater_is_better=True,
         seed=42,
-        num_train_epochs=1,
+        num_train_epochs=32,
         report_to=("wandb" if args.wandb_name else "none")
     )
 

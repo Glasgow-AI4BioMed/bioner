@@ -1,8 +1,17 @@
+---
+task: token-classification
+tags:
+- biomedical
+- bionlp
+license: mit
+base_model: {base_model}
+---
+
 # {model_name}
 
 This is a named entity recognition model fine-tuned from the [{base_model}](https://huggingface.co/{base_model}) model. It predicts spans with {label_count} possible labels. The labels are **{nice_labels}**.
 
-The code used for training this model can be found at https://github.com/Glasgow-AI4BioMed/bioner and the source dataset information is below.
+The code used for training this model can be found at https://github.com/Glasgow-AI4BioMed/bioner along with links to other biomedical NER models trained on well-known biomedical corpora. The source dataset information is below.
 
 ## Example Usage
 

@@ -4,7 +4,7 @@ This repo contains code for training NER models on a variety of well-known biome
 
 ## 🚀 Example Usage
 
-The code below will load up the model and apply it to the provided text. Notably, it uses an aggregation strategy to 
+The code below will load up the model and apply it to the provided text. It uses an aggregation strategy to post-process the [inside-outside-beginning](https://en.wikipedia.org/wiki/Inside%E2%80%93outside%E2%80%93beginning_(tagging)) tagging format.
 
 ```python
 from transformers import pipeline
@@ -27,7 +27,7 @@ ner_pipeline("EGFR T790M mutations have been known to affect treatment outcomes 
 | [ncbi_disease](https://huggingface.co/Glasgow-AI4BioMed/bioner_ncbi_disease) | Diseases |              |
 | [nlmchem](https://huggingface.co/Glasgow-AI4BioMed/bioner_nlmchem) | Chemicals |              |
 | [bc5cdr](https://huggingface.co/Glasgow-AI4BioMed/bioner_bc5cdr) | Chemicals and diseases |              |
-| [tmvar](https://huggingface.co/Glasgow-AI4BioMed/bioner_tmvar3) | Mutations (plus genes, species, etc) |              |
+| [tmvar3](https://huggingface.co/Glasgow-AI4BioMed/bioner_tmvar3) | Mutations (plus genes, species, etc) |              |
 | [gnormplus](https://huggingface.co/Glasgow-AI4BioMed/bioner_gnormplus) | Genes and gene families |              |
 
 ## 🛠️ Building the Models

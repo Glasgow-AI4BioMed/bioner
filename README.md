@@ -20,6 +20,16 @@ ner_pipeline("EGFR T790M mutations have been known to affect treatment outcomes 
 
 ## Available Models
 
+| Model | Entity Types | Entity Count |
+|-------|--------------|--------------|
+| [medmentions_st21pv](https://huggingface.co/Glasgow-AI4BioMed/bioner_medmentions_st21pv) | A variety of broad biomedical concept categories |              |
+| [medmentions_st21pv_finegrain](https://huggingface.co/Glasgow-AI4BioMed/bioner_medmentions_st21pv_finegrain)      | A large number of specific biomedical categories |              |
+| [ncbi_disease](https://huggingface.co/Glasgow-AI4BioMed/bioner_ncbi_disease) | Diseases |              |
+| [nlmchem](https://huggingface.co/Glasgow-AI4BioMed/bioner_nlmchem) | Chemicals |              |
+| [bc5cdr](https://huggingface.co/Glasgow-AI4BioMed/bioner_bc5cdr) | Chemicals and diseases |              |
+| [tmvar](https://huggingface.co/Glasgow-AI4BioMed/bioner_tmvar) | Mutations (plus genes, species, etc) |              |
+| [gnormplus](https://huggingface.co/Glasgow-AI4BioMed/bioner_gnormplus) | Genes and gene families |              |
+
 ## Building the Models
 
 The models can be built with a moderate GPU. The commands below outline what's needed to get the datasets, preprocess them and fine-tune the models.
@@ -40,22 +50,31 @@ The various datasets/corpora used to train the models can be downloaded used the
 bash fetch_corpora.sh
 ```
 
-### MedMentions
+### Preprocessing and training
+
+The sections below provide the commands to preprocess and tune the model. More details are available for each model on their model page including model performance and selected hyperparameters.
+
+#### MedMentions ST21pv
 
 ```bash
+# Preprocess the data
 python prepare_medmentions.py --medmentions_dir corpora_sources/medmentions/st21pv --semantic_groups corpora_sources/medmentions/SemGroups.txt --out_train datasets/medmentions_st21pv_train.bioc.xml.gz --out_val datasets/medmentions_st21pv_val.bioc.xml.gz --out_test datasets/medmentions_st21pv_test.bioc.xml.gz
 
-python prepare_medmentions.py --medmentions_dir corpora_sources/medmentions/st21pv --semantic_groups corpora_sources/medmentions/SemGroups.txt --out_train datasets/medmentions_st21pv_finegrain_train.xml.gz --out_val datasets/medmentions_st21pv_finegrain_val.bioc.xml.gz --out_test datasets/medmentions_st21pv_finegrain_test.bioc.xml.gz --finegrain
-
+# Tune the model and save it
+python tune_ner.py --train_corpus datasets/medmentions_st21pv_train.bioc.xml.gz --val_corpus datasets/medmentions_st21pv_val.bioc.xml.gz --test_corpus datasets/medmentions_st21pv_test.bioc.xml.gz --n_trials 10 --model_name bioner_medmentions_st21pv --model_card_template model_card_template.md --dataset_info dataset_info/medmentions_st21pv.md
 ```
 
-```bash
-python tune_ner.py --train_corpus datasets/medmentions_st21pv_train.bioc.xml.gz --val_corpus datasets/medmentions_st21pv_val.bioc.xml.gz --test_corpus datasets/medmentions_st21pv_test.bioc.xml.gz --n_trials 10 --model_name bioner_medmentions_st21pv --model_card_template model_card_template.md --dataset_info dataset_info/medmentions_st21pv.md
+#### MedMentions ST21pv (finegrain)
 
+```bash
+# Preprocess the data
+python prepare_medmentions.py --medmentions_dir corpora_sources/medmentions/st21pv --semantic_groups corpora_sources/medmentions/SemGroups.txt --out_train datasets/medmentions_st21pv_finegrain_train.xml.gz --out_val datasets/medmentions_st21pv_finegrain_val.bioc.xml.gz --out_test datasets/medmentions_st21pv_finegrain_test.bioc.xml.gz --finegrain
+
+# Tune the model and save it
 python tune_ner.py --train_corpus datasets/medmentions_st21pv_finegrain_train.bioc.xml.gz --val_corpus datasets/medmentions_st21pv_finegrain_val.bioc.xml.gz --test_corpus datasets/medmentions_st21pv_finegrain_test.bioc.xml.gz --n_trials 10 --model_name bioner_medmentions_st21pv_finegrain --model_card_template model_card_template.md --dataset_info dataset_info/medmentions_st21pv_finegrain.md
 ```
 
-### NCBI Disease
+#### NCBI Disease
 
 ```bash
 # Preprocess the data
@@ -65,7 +84,7 @@ python prepare_ncbi_disease.py --ncbidisease_dir corpora_sources/NCBI-disease --
 python tune_ner.py --train_corpus datasets/ncbi_disease_train.bioc.xml.gz --val_corpus datasets/ncbi_disease_val.bioc.xml.gz --test_corpus datasets/ncbi_disease_test.bioc.xml.gz --n_trials 10 --model_name bioner_ncbi_disease --model_card_template model_card_template.md --dataset_info dataset_info/ncbi_disease.md
 ```
 
-### NLM-Chem
+#### NLM-Chem
 
 ```bash
 # Preprocess the data
@@ -75,7 +94,7 @@ python prepare_nlmchem.py --nlmchem_dir corpora_sources/NLM-Chem --out_train dat
 python tune_ner.py --train_corpus datasets/nlmchem_train.bioc.xml.gz --val_corpus datasets/nlmchem_val.bioc.xml.gz --test_corpus datasets/nlmchem_test.bioc.xml.gz --n_trials 10 --model_name bioner_nlmchem --model_card_template model_card_template.md --dataset_info dataset_info/nlmchem.md
 ```
 
-### BC5CDR
+#### BC5CDR
 
 ```bash
 # Preprocess the data
@@ -85,7 +104,7 @@ python prepare_bc5cdr.py --bc5cdr_dir corpora_sources/CDR_Data/CDR.Corpus.v01051
 python tune_ner.py --train_corpus datasets/bc5cdr_train.bioc.xml.gz --val_corpus datasets/bc5cdr_val.bioc.xml.gz --test_corpus datasets/bc5cdr_test.bioc.xml.gz --n_trials 10 --model_name bioner_bc5cdr --model_card_template model_card_template.md --dataset_info dataset_info/bc5cdr.md
 ```
 
-### tmVar
+#### tmVar
 
 ```bash
 # Preprocess the data
@@ -96,7 +115,7 @@ python tune_ner.py --train_corpus datasets/tmvar3_train.bioc.xml.gz --val_corpus
 
 ```
 
-### GNormPlus
+#### GNormPlus
 
 ```bash
 # Preprocess the data

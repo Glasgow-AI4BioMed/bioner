@@ -4,3 +4,4 @@ intervaltree
 numpy
 transformers
 datasets
+optuna

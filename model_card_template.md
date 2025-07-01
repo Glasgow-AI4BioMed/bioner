@@ -8,7 +8,7 @@ The code used for training this model can be found at https://github.com/Glasgow
 
 The code below will load up the model and apply it to the provided text. Notably, it uses an aggregation strategy to 
 
-```
+```python
 from transformers import pipeline
 
 # Load the model as part of an NER pipeline

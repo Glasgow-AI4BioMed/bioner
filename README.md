@@ -6,7 +6,7 @@ This repo contains code for training NER models on a variety of well-known biome
 
 The code below will load up the model and apply it to the provided text. Notably, it uses an aggregation strategy to 
 
-```
+```python
 from transformers import pipeline
 
 # Load the model as part of an NER pipeline
@@ -28,7 +28,7 @@ The models can be built with a moderate GPU. The commands below outline what's n
 
 Building the models requires several libraries including transformers and are listed in the [requirements.txt](https://github.com/Glasgow-AI4BioMed/bioner/blob/main/requirements.txt) file. These can be installed through pip with:
 
-```
+```bash
 pip install -r requirements.txt
 ```
 
@@ -36,20 +36,20 @@ pip install -r requirements.txt
 
 The various datasets/corpora used to train the models can be downloaded used the [fetch_corpora.sh](https://github.com/Glasgow-AI4BioMed/bioner/blob/main/fetch_corpora.sh) script:
 
-```
+```bash
 bash fetch_corpora.sh
 ```
 
 ### MedMentions
 
-```
+```bash
 python prepare_medmentions.py --medmentions_dir corpora_sources/medmentions/st21pv --semantic_groups corpora_sources/medmentions/SemGroups.txt --out_train datasets/medmentions_st21pv_train.bioc.xml.gz --out_val datasets/medmentions_st21pv_val.bioc.xml.gz --out_test datasets/medmentions_st21pv_test.bioc.xml.gz
 
 python prepare_medmentions.py --medmentions_dir corpora_sources/medmentions/st21pv --semantic_groups corpora_sources/medmentions/SemGroups.txt --out_train datasets/medmentions_st21pv_finegrain_train.xml.gz --out_val datasets/medmentions_st21pv_finegrain_val.bioc.xml.gz --out_test datasets/medmentions_st21pv_finegrain_test.bioc.xml.gz --finegrain
 
 ```
 
-```
+```bash
 python tune_ner.py --train_corpus datasets/medmentions_st21pv_train.bioc.xml.gz --val_corpus datasets/medmentions_st21pv_val.bioc.xml.gz --test_corpus datasets/medmentions_st21pv_test.bioc.xml.gz --n_trials 10 --model_name bioner_medmentions_st21pv --model_card_template model_card_template.md --dataset_info dataset_info/medmentions_st21pv.md
 
 python tune_ner.py --train_corpus datasets/medmentions_st21pv_finegrain_train.bioc.xml.gz --val_corpus datasets/medmentions_st21pv_finegrain_val.bioc.xml.gz --test_corpus datasets/medmentions_st21pv_finegrain_test.bioc.xml.gz --n_trials 10 --model_name bioner_medmentions_st21pv_finegrain --model_card_template model_card_template.md --dataset_info dataset_info/medmentions_st21pv_finegrain.md
@@ -57,7 +57,7 @@ python tune_ner.py --train_corpus datasets/medmentions_st21pv_finegrain_train.bi
 
 ### NCBI Disease
 
-```
+```bash
 # Preprocess the data
 python prepare_ncbi_disease.py --ncbidisease_dir corpora_sources/NCBI-disease --out_train datasets/ncbi_disease_train.bioc.xml.gz --out_val datasets/ncbi_disease_val.bioc.xml.gz --out_test datasets/ncbi_disease_test.bioc.xml.gz
 
@@ -67,7 +67,7 @@ python tune_ner.py --train_corpus datasets/ncbi_disease_train.bioc.xml.gz --val_
 
 ### NLM-Chem
 
-```
+```bash
 # Preprocess the data
 python prepare_nlmchem.py --nlmchem_dir corpora_sources/NLM-Chem --out_train datasets/nlmchem_train.bioc.xml.gz --out_val datasets/nlmchem_val.bioc.xml.gz --out_test datasets/nlmchem_test.bioc.xml.gz
 
@@ -77,7 +77,7 @@ python tune_ner.py --train_corpus datasets/nlmchem_train.bioc.xml.gz --val_corpu
 
 ### BC5CDR
 
-```
+```bash
 # Preprocess the data
 python prepare_bc5cdr.py --bc5cdr_dir corpora_sources/CDR_Data/CDR.Corpus.v010516 --out_train datasets/bc5cdr_train.bioc.xml.gz --out_val datasets/bc5cdr_val.bioc.xml.gz --out_test datasets/bc5cdr_test.bioc.xml.gz
 
@@ -87,7 +87,7 @@ python tune_ner.py --train_corpus datasets/bc5cdr_train.bioc.xml.gz --val_corpus
 
 ### tmVar
 
-```
+```bash
 # Preprocess the data
 python prepare_tmvar.py --tmvar_corpus corpora_sources/tmVar3Corpus.txt --out_train datasets/tmvar3_train.bioc.xml.gz --out_val datasets/tmvar3_val.bioc.xml.gz --out_test datasets/tmvar3_test.bioc.xml.gz
 
@@ -98,7 +98,7 @@ python tune_ner.py --train_corpus datasets/tmvar3_train.bioc.xml.gz --val_corpus
 
 ### GNormPlus
 
-```
+```bash
 # Preprocess the data
 python prepare_gnormplus.py --gnormplus_dir corpora_sources/GNormPlusCorpus --out_train datasets/gnormplus_train.bioc.xml.gz --out_val datasets/gnormplus_val.bioc.xml.gz --out_test datasets/gnormplus_test.bioc.xml.gz
 

@@ -4,6 +4,7 @@ from intervaltree import IntervalTree
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 from transformers import DataCollatorForTokenClassification
 from transformers import Trainer, TrainingArguments, TrainerCallback, EarlyStoppingCallback
+from transformers import pipeline
 import numpy as np
 from sklearn.metrics import classification_report, f1_score, accuracy_score, precision_score, recall_score
 from datasets import Dataset
@@ -132,8 +133,10 @@ class SaveBestModelCallback(TrainerCallback):
 
         if is_better:
             self.best_metric = current_metric
-            print(f"New best model found! {metric_name} = {current_metric:.4f}. Saving to {self.save_path}")
+            print(f"\n\nNew best model found! {metric_name} = {current_metric:.4f} at epoch {state.epoch:.0f}. Saving to {self.save_path}\n")
             self.trainer.save_model(self.save_path)
+            with open(f'{self.save_path}/epoch.txt','w') as f:
+                f.write(f"{state.epoch:.0f}")
 
 
 def classification_report_to_markdown(report_dict):
@@ -178,7 +181,7 @@ def run_classification_report(trainer, dataset, id2label, labels):
 
     return classification_report_to_markdown(report_dict)
 
-def make_hyperparamter_table(hyperparameters):
+def make_hyperparameter_table(hyperparameters):
     headers = ["Hyperparameter", "Value"]
     table = f"| {headers[0]} | {headers[1]} |\n"
     table += f"|{'-' * (len(headers[0]) + 2)}|{'-' * (len(headers[1]) + 2)}|\n"
@@ -187,6 +190,24 @@ def make_hyperparamter_table(hyperparameters):
         table += f"| {key} | {value} |\n"
     
     return table
+
+def make_example_output(model_name):
+    # Load the model as part of an NER pipeline
+    ner_pipeline = pipeline("token-classification", 
+                            model=model_name,
+                            aggregation_strategy="simple", 
+                            device=-1) # Run on CPU
+    
+    # Apply it to some text
+    result = ner_pipeline("EGFR T790M mutations affect treatment outcomes for NSCLC patients receiving erlotinib.")
+
+    # Create a compact and commented version of the output
+    for x in result:
+        x['score'] = round(float(x['score']),5)
+    jsoned = [ json.dumps(x) for x in result ]
+    commented = [ f'# [ {line},' if i==0 else (f'#   {line} ]' if i==(len(jsoned)-1) else f'#   {line},') for i,line in enumerate(jsoned) ]
+
+    return "\n".join(commented)
 
 def prepare_repo(model_name, base_model, annotated_labels, n_trials, hyperparameters, train_report, val_report, test_report, model_card_template_filename, dataset_info_filename):
 
@@ -199,18 +220,30 @@ def prepare_repo(model_name, base_model, annotated_labels, n_trials, hyperparame
     nice_labels = ", ".join(annotated_labels[:-1]) + f" and {annotated_labels[-1]}"
     label_count = len(annotated_labels)
 
-    hyperparameter_table = make_hyperparamter_table(hyperparameters)
+    # Recover the number of epochs from training
+    with open(f'{model_name}/epoch.txt') as f:
+        epochs = int(f.read().strip())
+    os.remove(f'{model_name}/epoch.txt')
+
+    example_output = make_example_output(model_name)
+
+    hyperparameters = { 'epochs':epochs, **hyperparameters }
+    hyperparameter_table = make_hyperparameter_table(hyperparameters)
 
     readme = model_card_template.format(
         model_name=model_name,
         base_model=base_model,
         nice_labels=nice_labels,
         label_count=label_count,
+        example_output=example_output,
         dataset_info=dataset_info,
         n_trials=n_trials,
         hyperparameter_table=hyperparameter_table,
         test_report=test_report,
     )
+
+    with open(f"{model_name}/best_hyperparameters.json", "w") as f:
+        json.dump(hyperparameters, f, indent=2)
 
     with open(f"{model_name}/report_train.md", "w") as f:
         f.write(train_report)
@@ -221,6 +254,7 @@ def prepare_repo(model_name, base_model, annotated_labels, n_trials, hyperparame
         
     with open(f"{model_name}/README.md", "w") as f:
         f.write(readme)
+
                  
 def main():
     parser = argparse.ArgumentParser('Run hyperparameter tuning for an NER model and save out the best')
@@ -325,9 +359,6 @@ def main():
 
     # Remove temporary directory
     shutil.rmtree(tmp_model_dir)
-
-    with open(f"{args.model_name}/best_hyperparameters.json", "w") as f:
-        json.dump(best_trial.hyperparameters, f, indent=2)
 
     # Load up the best model
     trainer.model = AutoModelForTokenClassification.from_pretrained(args.model_name).to(trainer.args.device)

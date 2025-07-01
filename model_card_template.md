@@ -15,7 +15,7 @@ The code used for training this model can be found at https://github.com/Glasgow
 
 ## Example Usage
 
-The code below will load up the model and apply it to the provided text. Notably, it uses an aggregation strategy to 
+The code below will load up the model and apply it to the provided text. It uses a simple aggregation strategy to post-process the individual tokens into larger multi-token entities where needed.
 
 ```python
 from transformers import pipeline
@@ -27,6 +27,9 @@ ner_pipeline = pipeline("token-classification",
 
 # Apply it to some text
 ner_pipeline("EGFR T790M mutations have been known to affect treatment outcomes for NSCLC patients receiving erlotinib.")
+
+# Output:
+{example_output}
 ```
 
 ## Dataset Info
@@ -43,6 +46,6 @@ The performance on the training and validation splits are available in the corre
 
 ## Hyperparameters
 
-Hyperparameter tuning was done with [optuna](https://optuna.org/) and the [hyperparameter_search](https://huggingface.co/docs/transformers/en/hpo_train) functionality. {n_trials} trials were run. The best performing model was selected using the macro F1 performance on the validation set. The selected hyperparameters are in the table below.
+Hyperparameter tuning was done with [optuna](https://optuna.org/) and the [hyperparameter_search](https://huggingface.co/docs/transformers/en/hpo_train) functionality. {n_trials} trials were run. Early stopping was applied during training. The best performing model was selected using the macro F1 performance on the validation set. The selected hyperparameters are in the table below.
 
 {hyperparameter_table}

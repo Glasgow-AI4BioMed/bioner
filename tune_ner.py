@@ -4,7 +4,7 @@ from intervaltree import IntervalTree
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 from transformers import DataCollatorForTokenClassification
 from transformers import Trainer, TrainingArguments, TrainerCallback, EarlyStoppingCallback
-from transformers import pipeline
+from transformers import pipeline, AutoConfig
 import numpy as np
 from sklearn.metrics import classification_report, f1_score, accuracy_score, precision_score, recall_score
 from datasets import Dataset
@@ -284,6 +284,10 @@ def main():
 
     base_model = 'microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract'
     tokenizer = AutoTokenizer.from_pretrained(base_model)
+
+    # Deal with the model not have the max_length saved (which gives a warning)
+    model_config = AutoConfig.from_pretrained(base_model)
+    tokenizer.model_max_length = model_config.max_position_embeddings
 
     train_tokenized = make_dataset(train_collection, tokenizer, label2id)
     val_tokenized = make_dataset(val_collection, tokenizer, label2id)

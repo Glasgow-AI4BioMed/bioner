@@ -2,7 +2,7 @@
 
 This repo contains code for training NER models on a variety of well-known biomedical named entity recognition datasets. The models are fine-tuned token classification models that are available through Hugging Face Hub.
 
-## Example Usage
+## 🚀 Example Usage
 
 The code below will load up the model and apply it to the provided text. Notably, it uses an aggregation strategy to 
 
@@ -18,7 +18,7 @@ ner_pipeline = pipeline("token-classification",
 ner_pipeline("EGFR T790M mutations have been known to affect treatment outcomes for NSCLC patients receiving erlotinib.")
 ```
 
-## Available Models
+## ⭐ Available Models
 
 | Model | Entity Types | Entity Count |
 |-------|--------------|--------------|
@@ -27,10 +27,10 @@ ner_pipeline("EGFR T790M mutations have been known to affect treatment outcomes 
 | [ncbi_disease](https://huggingface.co/Glasgow-AI4BioMed/bioner_ncbi_disease) | Diseases |              |
 | [nlmchem](https://huggingface.co/Glasgow-AI4BioMed/bioner_nlmchem) | Chemicals |              |
 | [bc5cdr](https://huggingface.co/Glasgow-AI4BioMed/bioner_bc5cdr) | Chemicals and diseases |              |
-| [tmvar](https://huggingface.co/Glasgow-AI4BioMed/bioner_tmvar) | Mutations (plus genes, species, etc) |              |
+| [tmvar](https://huggingface.co/Glasgow-AI4BioMed/bioner_tmvar3) | Mutations (plus genes, species, etc) |              |
 | [gnormplus](https://huggingface.co/Glasgow-AI4BioMed/bioner_gnormplus) | Genes and gene families |              |
 
-## Building the Models
+## 🛠️ Building the Models
 
 The models can be built with a moderate GPU. The commands below outline what's needed to get the datasets, preprocess them and fine-tune the models.
 
@@ -104,7 +104,7 @@ python prepare_bc5cdr.py --bc5cdr_dir corpora_sources/CDR_Data/CDR.Corpus.v01051
 python tune_ner.py --train_corpus datasets/bc5cdr_train.bioc.xml.gz --val_corpus datasets/bc5cdr_val.bioc.xml.gz --test_corpus datasets/bc5cdr_test.bioc.xml.gz --n_trials 10 --model_name bioner_bc5cdr --model_card_template model_card_template.md --dataset_info dataset_info/bc5cdr.md
 ```
 
-#### tmVar
+#### tmVar3
 
 ```bash
 # Preprocess the data

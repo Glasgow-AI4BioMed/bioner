@@ -225,6 +225,9 @@ def prepare_repo(model_name, base_model, annotated_labels, n_trials, hyperparame
         epochs = int(f.read().strip())
     os.remove(f'{model_name}/epoch.txt')
 
+    # Remove the training_args file as it may not contain args for the best run
+    os.remove(f'{model_name}/training_args.bin')
+
     example_output = make_example_output(model_name)
 
     hyperparameters = { 'epochs':epochs, **hyperparameters }

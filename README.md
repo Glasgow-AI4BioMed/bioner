@@ -58,7 +58,7 @@ The sections below provide the commands to preprocess and tune the model. More d
 
 ```bash
 # Preprocess the data
-python prepare_medmentions.py --medmentions_dir corpora_sources/medmentions/st21pv --semantic_groups corpora_sources/medmentions/SemGroups.txt --out_train datasets/medmentions_st21pv_train.bioc.xml.gz --out_val datasets/medmentions_st21pv_val.bioc.xml.gz --out_test datasets/medmentions_st21pv_test.bioc.xml.gz
+python prepare_medmentions.py --umls_mrsty ~/umls/2017AA-full/META/MRSTY.RRF --medmentions_dir corpora_sources/medmentions/st21pv --semantic_groups corpora_sources/medmentions/SemGroups.txt --out_train datasets/medmentions_st21pv_train.bioc.xml.gz --out_val datasets/medmentions_st21pv_val.bioc.xml.gz --out_test datasets/medmentions_st21pv_test.bioc.xml.gz
 
 # Tune the model and save it
 python tune_ner.py --train_corpus datasets/medmentions_st21pv_train.bioc.xml.gz --val_corpus datasets/medmentions_st21pv_val.bioc.xml.gz --test_corpus datasets/medmentions_st21pv_test.bioc.xml.gz --n_trials 100 --model_name bioner_medmentions_st21pv --model_card_template model_card_template.md --dataset_info dataset_info/medmentions_st21pv.md
@@ -68,7 +68,7 @@ python tune_ner.py --train_corpus datasets/medmentions_st21pv_train.bioc.xml.gz 
 
 ```bash
 # Preprocess the data
-python prepare_medmentions.py --finegrain --medmentions_dir corpora_sources/medmentions/st21pv --semantic_groups corpora_sources/medmentions/SemGroups.txt --out_train datasets/medmentions_st21pv_finegrain_train.bioc.xml.gz --out_val datasets/medmentions_st21pv_finegrain_val.bioc.xml.gz --out_test datasets/medmentions_st21pv_finegrain_test.bioc.xml.gz
+python prepare_medmentions.py --finegrain --umls_mrsty ~/umls/2017AA-full/META/MRSTY.RRF --medmentions_dir corpora_sources/medmentions/st21pv --semantic_groups corpora_sources/medmentions/SemGroups.txt --out_train datasets/medmentions_st21pv_finegrain_train.bioc.xml.gz --out_val datasets/medmentions_st21pv_finegrain_val.bioc.xml.gz --out_test datasets/medmentions_st21pv_finegrain_test.bioc.xml.gz
 
 # Tune the model and save it
 python tune_ner.py --train_corpus datasets/medmentions_st21pv_finegrain_train.bioc.xml.gz --val_corpus datasets/medmentions_st21pv_finegrain_val.bioc.xml.gz --test_corpus datasets/medmentions_st21pv_finegrain_test.bioc.xml.gz --n_trials 100 --model_name bioner_medmentions_st21pv_finegrain --model_card_template model_card_template.md --dataset_info dataset_info/medmentions_st21pv_finegrain.md

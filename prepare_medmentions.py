@@ -8,6 +8,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--medmentions_dir',type=str,required=True,help='Directory with MedMentions files')
     parser.add_argument('--semantic_groups',type=str,required=True,help='Semantic groups file')
+    parser.add_argument('--umls_mrsty',type=str,required=True,help='UMLS MRSTY.RRF file')
     parser.add_argument('--out_train',type=str,required=True,help='Output Gzipped BioC XML file for training set')
     parser.add_argument('--out_val',type=str,required=True,help='Output Gzipped BioC XML file for validation set')
     parser.add_argument('--out_test',type=str,required=True,help='Output Gzipped BioC XML file for test set')
@@ -43,20 +44,35 @@ def main():
 
     print("Loading semantic types from UMLS...")
     semantic_types = {}
+    with open(args.umls_mrsty) as f:
+        for line in f:
+            split = line.strip().split('|')
+            cui = split[0]
+            type_id = split[1]
+            #type_name = split[3]
+    
+            semantic_types[cui] = type_id
+
+    print("Loading semantic groups...")
+    semantic_type_mapping = {}
     with open(args.semantic_groups) as f:
         for line in f:
             group_id,group_name,type_id,type_name = line.strip('\n').split('|')
 
             if args.finegrain:
-                semantic_types[type_id] = type_name
+                semantic_type_mapping[type_id] = type_name
             else:
-                semantic_types[type_id] = group_name
+                semantic_type_mapping[type_id] = group_name
             
     print("Labelling annotations with semantic information...")
     for doc in train_docs + val_docs + test_docs:
         for passage in doc.passages:
             for anno in passage.annotations:
-                type_name = semantic_types[anno.infons['label']]
+                cui = anno.infons['concept_id'].removeprefix('UMLS:')
+                #type_id = anno.infons['label'] # Do not use the semantic type ID provided in MedMentions
+                type_id = semantic_types[cui]
+                type_name = semantic_type_mapping[type_id]
+                
                 anno.infons['label'] = type_name
             passage.annotations = [ anno for anno in passage.annotations if anno.infons['label'] ]
 

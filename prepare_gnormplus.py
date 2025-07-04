@@ -20,9 +20,14 @@ def main():
         train_collection = biocxml.load(fp)
     with open(f"{args.gnormplus_dir}/BC2GNtest.BioC.xml") as fp:
         test_collection = biocxml.load(fp)
-
+    
     train_docs = train_collection.documents
     test_docs = test_collection.documents
+
+    for doc in train_docs+test_docs:
+        for passage in doc.passages:
+            for anno in passage.annotations:
+                anno.infons = { 'label': anno.infons['type'] }
 
     train_docs, val_docs = train_test_split(train_docs, train_size=0.75, random_state=42)
        

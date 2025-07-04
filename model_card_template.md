@@ -9,7 +9,7 @@ base_model: {base_model}
 
 # {model_name}
 
-This is a named entity recognition model fine-tuned from the [{base_model}](https://huggingface.co/{base_model}) model. It predicts spans with {label_count} possible labels. The labels are **{nice_labels}**.
+This is a named entity recognition model fine-tuned from the [{base_model}](https://huggingface.co/{base_model}) model. {label_explanation}
 
 The code used for training this model can be found at https://github.com/Glasgow-AI4BioMed/bioner along with links to other biomedical NER models trained on well-known biomedical corpora. The source dataset information is below.
 
@@ -38,11 +38,9 @@ ner_pipeline("EGFR T790M mutations have been known to affect treatment outcomes 
 
 ## Performance
 
-The performance on the test split for the different labels are shown in the table below. This shows the individual B- (begin) and I- (inside) token-level labels with IOB2 labelling.
+The span-level performance on the test split for the different labels are shown in the tables below. The full performance results are available in the model repo in Markdown format for viewing and JSON format for easier loading. These include the performance at token level (with individual B- and I- labels as the token classifier uses IOB2 token labelling).
 
-{test_report}
-
-The performance on the training and validation splits are available in the corresponding files in the model repo.
+{test_span_report}
 
 ## Hyperparameters
 

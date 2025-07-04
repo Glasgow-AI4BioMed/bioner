@@ -28,3 +28,5 @@ def save_bioc_docs(docs, filename):
 	collection = bioc.BioCCollection.of_documents(*docs)
 	with gzip.open(filename, 'wt', encoding='utf8') as f:
 		biocxml.dump(collection, f)
+
+

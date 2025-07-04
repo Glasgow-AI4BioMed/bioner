@@ -1,6 +1,5 @@
 from bioc import biocxml
 import gzip
-from intervaltree import IntervalTree
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 from transformers import DataCollatorForTokenClassification
 from transformers import Trainer, TrainingArguments, TrainerCallback, EarlyStoppingCallback
@@ -15,64 +14,44 @@ import shutil
 
 from model_preparation import prepare_model_repo
 
-def run_classification_report(trainer, dataset, id2label, labels):
 
-    results = trainer.predict(dataset)
+def tokenize_and_label(text, spans, tokenizer, label2id, word_based):
 
-    label_ids = results.label_ids.reshape(-1)
-    predictions = np.argmax(results.predictions, axis=2).reshape(-1)
-
-    nonmasked_predictions = [
-        prediction for prediction, label_id in zip(predictions, label_ids) if label_id != -100
-    ]
-    
-    nonmasked_label_ids = [
-        label_id for prediction, label_id in zip(predictions, label_ids) if label_id != -100
-    ]
-    
-    report_dict = classification_report(nonmasked_label_ids, nonmasked_predictions, labels=sorted(id2label.keys()), target_names=labels, zero_division=0.0, output_dict=True)
-
-    return report_dict
-
-def tokenize_and_label(text, spans, tokenizer, label2id):
-
-    tree = IntervalTree()
-    for start,end,label in spans:
-        tree.addi(start,end,label)
-
-    encoding = tokenizer(
+    # Tokenize with offset mapping only
+    encoded = tokenizer(
         text,
         return_offsets_mapping=True,
+        return_tensors=None,
         truncation=True,
-        padding=True,
-        max_length=512
     )
-                 
-    label_ids = []
     
-    prev_anno = None
-    for start,end in encoding['offset_mapping']:
-        cur_anno = tree[start:end]
-        if start==end: # Special tokens that have zero length
-            label_id = -100
-        elif cur_anno:
-            label = list(cur_anno)[0].data
-                
-            if cur_anno == prev_anno:
-                label_id = label2id[f'I-{label}']
-            else:
-                label_id = label2id[f'B-{label}']
-        else:
-            label_id = label2id['O']
+    offset_mapping = encoded["offset_mapping"]
     
-        label_ids.append(label_id)
-        prev_anno = cur_anno
+    word_ids = encoded.word_ids()
+    word_start_idxs = set( i for i,word_id in enumerate(word_ids) if word_id is not None and word_ids[i - 1] != word_id )
+    
+    if word_based:
+        labels = [-100] * len(offset_mapping)
+        for idx in word_start_idxs:
+            labels[idx] = label2id['O']
+    else:
+        labels = [ -100 if start==end else label2id['O'] for start,end in offset_mapping ]
 
-    encoding['labels'] = label_ids
-    return encoding
+    for start, end, label in spans:
+        token_idxs = [ i for i,(t_start,t_end) in enumerate(offset_mapping) if start <= t_start and t_end <= end ]
+
+        if token_idxs: # If we've got tokens (otherwise the text has likely been truncated before getting to this span)
+            labels[token_idxs[0]] = label2id[f'B-{label}']
+            for token_idx in token_idxs[1:]:
+                if token_idx in word_start_idxs or (not word_based):
+                    labels[token_idx] = label2id[f'I-{label}']
+
+    encoded["labels"] = labels
+    encoded.pop("offset_mapping")
+    return encoded
 
 
-def make_dataset(collection, tokenizer, label2id):
+def make_dataset(collection, tokenizer, label2id, word_based):
     dataset = []
     
     for doc in collection.documents:
@@ -86,7 +65,7 @@ def make_dataset(collection, tokenizer, label2id):
     
             text = passage.text
     
-            tokenized = tokenize_and_label(text, spans, tokenizer, label2id)
+            tokenized = tokenize_and_label(text, spans, tokenizer, label2id, word_based)
             dataset.append(tokenized)
 
     return dataset
@@ -158,7 +137,27 @@ class SaveBestModelCallback(TrainerCallback):
             with open(f'{self.save_path}/epoch.txt','w') as f:
                 f.write(f"{state.epoch:.0f}")
 
-def train_and_tune_model(base_model, model_name, annotated_labels, train_collection, val_collection, test_collection, n_trials, wandb_name):
+
+def run_classification_report(trainer, dataset, id2label, labels):
+
+    results = trainer.predict(dataset)
+
+    label_ids = results.label_ids.reshape(-1)
+    predictions = np.argmax(results.predictions, axis=2).reshape(-1)
+
+    nonmasked_predictions = [
+        prediction for prediction, label_id in zip(predictions, label_ids) if label_id != -100
+    ]
+    
+    nonmasked_label_ids = [
+        label_id for prediction, label_id in zip(predictions, label_ids) if label_id != -100
+    ]
+    
+    report_dict = classification_report(nonmasked_label_ids, nonmasked_predictions, labels=sorted(id2label.keys()), target_names=labels, zero_division=0.0, output_dict=True)
+
+    return report_dict
+
+def train_and_tune_model(base_model, model_name, annotated_labels, train_collection, val_collection, test_collection, n_trials, wandb_name, word_based):
     
     labels = ['O'] + [ f'{prefix}-{label}' for label in annotated_labels for prefix in ['B','I'] ]
     id2label = { idx:label for idx,label in enumerate(labels) }
@@ -172,9 +171,9 @@ def train_and_tune_model(base_model, model_name, annotated_labels, train_collect
     model_config = AutoConfig.from_pretrained(base_model)
     tokenizer.model_max_length = model_config.max_position_embeddings
 
-    train_tokenized = make_dataset(train_collection, tokenizer, label2id)
-    val_tokenized = make_dataset(val_collection, tokenizer, label2id)
-    test_tokenized = make_dataset(test_collection, tokenizer, label2id)
+    train_tokenized = make_dataset(train_collection, tokenizer, label2id, word_based)
+    val_tokenized = make_dataset(val_collection, tokenizer, label2id, word_based)
+    test_tokenized = make_dataset(test_collection, tokenizer, label2id, word_based)
 
     train_dataset = Dataset.from_list(train_tokenized)
     val_dataset = Dataset.from_list(val_tokenized)
@@ -265,6 +264,7 @@ def main():
     parser.add_argument('--model_name',type=str,required=True,help='Name of model to save (and output directory)')
     parser.add_argument('--model_card_template',type=str,required=True,help='Markdown file with template of model_card')
     parser.add_argument('--dataset_info',type=str,required=True,help='Markdown file with dataset information')
+    parser.add_argument('--word_based',action='store_true',required=False,help='Whether to train a word-based model (only labels first token of each word)')
     args = parser.parse_args()
 
     with gzip.open(args.train_corpus, 'rt', encoding='utf8') as f:
@@ -277,9 +277,9 @@ def main():
     
     annotated_labels = sorted(set( anno.infons['label'] for doc in train_collection.documents+val_collection.documents+test_collection.documents for passage in doc.passages for anno in passage.annotations ))
 
-    best_hyperparameters, train_token_report, val_token_report, test_token_report = train_and_tune_model(args.base_model, args.model_name, annotated_labels, train_collection, val_collection, test_collection, args.n_trials, args.wandb_name)
+    best_hyperparameters, train_token_report, val_token_report, test_token_report = train_and_tune_model(args.base_model, args.model_name, annotated_labels, train_collection, val_collection, test_collection, args.n_trials, args.wandb_name, bool(args.word_based))
     
-    prepare_model_repo(args.model_name, args.base_model, annotated_labels, args.n_trials, best_hyperparameters, train_collection, val_collection, test_collection, train_token_report, val_token_report, test_token_report, args.model_card_template, args.dataset_info)
+    prepare_model_repo(args.model_name, args.base_model, annotated_labels, args.n_trials, best_hyperparameters, train_collection, val_collection, test_collection, train_token_report, val_token_report, test_token_report, args.model_card_template, args.dataset_info, bool(args.word_based))
 
     print("Done.")
     

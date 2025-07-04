@@ -105,11 +105,12 @@ def make_example_output(ner_pipeline):
 
     return "\n".join(commented)
 
-def prepare_model_repo(model_name, base_model, annotated_labels, n_trials, hyperparameters, train_collection, val_collection, test_collection, train_token_report, val_token_report, test_token_report, model_card_template_filename, dataset_info_filename):
+def prepare_model_repo(model_name, base_model, annotated_labels, n_trials, hyperparameters, train_collection, val_collection, test_collection, train_token_report, val_token_report, test_token_report, model_card_template_filename, dataset_info_filename, word_based):
     
     ner_pipeline = pipeline("token-classification", 
                             model=model_name,
-                            aggregation_strategy="simple", device='cuda')
+                            aggregation_strategy="first" if word_based else "simple", 
+                            device='cuda')
 
     with open(model_card_template_filename) as f:
         model_card_template = f.read()

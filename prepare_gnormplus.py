@@ -1,4 +1,4 @@
-from bioc import pubtator
+from bioc import biocxml
 import argparse
 import os
 
@@ -16,13 +16,13 @@ def main():
     assert os.path.isdir(args.gnormplus_dir)
 
     print("Loading documents...")
-    with open(f"{args.gnormplus_dir}/BC2GNtrain.PubTator.txt") as fp:
-        train_docs = pubtator.load(fp)
-    with open(f"{args.gnormplus_dir}/BC2GNtest.PubTator.txt") as fp:
-        test_docs = pubtator.load(fp)
+    with open(f"{args.gnormplus_dir}/BC2GNtrain.BioC.xml") as fp:
+        train_collection = biocxml.load(fp)
+    with open(f"{args.gnormplus_dir}/BC2GNtest.BioC.xml") as fp:
+        test_collection = biocxml.load(fp)
 
-    train_docs = [ pubtator_to_bioc(doc) for doc in train_docs ]
-    test_docs = [ pubtator_to_bioc(doc) for doc in test_docs ]
+    train_docs = train_collection.documents
+    test_docs = test_collection.documents
 
     train_docs, val_docs = train_test_split(train_docs, train_size=0.75, random_state=42)
        

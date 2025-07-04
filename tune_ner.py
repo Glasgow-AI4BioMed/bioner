@@ -194,7 +194,7 @@ def train_and_tune_model(base_model, model_name, annotated_labels, train_collect
     save_best_model_callback = SaveBestModelCallback(model_name)
     
     unique_info = f'{socket.gethostname()}_{os.getpid()}'
-    tmp_model_dir = f"tmp_mentiondetector_{unique_info}"
+    tmp_model_dir = f"tmp_ner_{unique_info}"
     training_args = TrainingArguments(
         output_dir=tmp_model_dir,
         eval_strategy="epoch",
@@ -204,7 +204,7 @@ def train_and_tune_model(base_model, model_name, annotated_labels, train_collect
         load_best_model_at_end=True,
         greater_is_better=True,
         seed=42,
-        num_train_epochs=1,
+        num_train_epochs=32,
         report_to=("wandb" if wandb_name else "none")
     )
 

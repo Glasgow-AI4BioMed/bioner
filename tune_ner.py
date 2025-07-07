@@ -156,12 +156,12 @@ def train_and_tune_model(base_model, model_name, annotated_labels, train_collect
     training_args = TrainingArguments(
         output_dir=tmp_model_dir,
         eval_strategy="epoch",
-        save_strategy="epoch",
+        save_strategy="best",
         logging_dir="./logs",
         metric_for_best_model="eval_macro_f1",
         load_best_model_at_end=True,
         greater_is_better=True,
-        save_total_limit=0,
+        save_total_limit=1,
         seed=42,
         num_train_epochs=max_epochs,
         report_to=("wandb" if wandb_name else "none")
@@ -198,9 +198,7 @@ def train_and_tune_model(base_model, model_name, annotated_labels, train_collect
         direction="maximize",
     )
 
-    checkpoints = os.listdir(f'{tmp_model_dir}/run-{best_trial.run_id}')
-    assert len(checkpoints) == 1
-    
+    checkpoints = sorted(os.listdir(f'{tmp_model_dir}/run-{best_trial.run_id}'))
     best_trial_checkpoint_dir = f'{tmp_model_dir}/run-{best_trial.run_id}/{checkpoints[0]}'
     print(f"{best_trial_checkpoint_dir=}")
 

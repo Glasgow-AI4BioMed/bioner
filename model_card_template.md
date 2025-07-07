@@ -23,7 +23,7 @@ from transformers import pipeline
 # Load the model as part of an NER pipeline
 ner_pipeline = pipeline("token-classification", 
                         model="Glasgow-AI4BioMed/{model_name}",
-                        aggregation_strategy="simple")
+                        aggregation_strategy="max")
 
 # Apply it to some text
 ner_pipeline("EGFR T790M mutations have been known to affect treatment outcomes for NSCLC patients receiving erlotinib.")

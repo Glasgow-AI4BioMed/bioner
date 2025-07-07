@@ -1,6 +1,5 @@
 from transformers import pipeline
 import json
-import os
 
 import pandas as pd
 from tabulate import tabulate
@@ -105,28 +104,11 @@ def make_example_output(ner_pipeline):
 
     return "\n".join(commented)
 
-def do_more_span_evals(model_name, train_collection, val_collection, test_collection):
-    results = {}
-    for aggregation_strategy in "simple", "first", "average", "max":
-        ner_pipeline = pipeline("token-classification", 
-                                model=model_name,
-                                aggregation_strategy=aggregation_strategy, 
-                                device='cuda')
-        
-        train_span_report = evaluate_at_span_level(ner_pipeline, train_collection)
-        val_span_report = evaluate_at_span_level(ner_pipeline, val_collection)
-        test_span_report = evaluate_at_span_level(ner_pipeline, test_collection)
-
-        results[aggregation_strategy] = {'train':train_span_report, 'val':val_span_report, 'test':test_span_report}
-
-        del ner_pipeline
-    return results
-
 def prepare_model_repo(model_name, base_model, annotated_labels, n_trials, hyperparameters, train_collection, val_collection, test_collection, train_token_report, val_token_report, test_token_report, model_card_template_filename, dataset_info_filename, word_based):
     
     ner_pipeline = pipeline("token-classification", 
                             model=model_name,
-                            aggregation_strategy="first" if word_based else "simple", 
+                            aggregation_strategy="max", 
                             device='cuda')
 
     with open(model_card_template_filename) as f:
@@ -144,16 +126,12 @@ def prepare_model_repo(model_name, base_model, annotated_labels, n_trials, hyper
         label_explanation = f"It predicts spans with {label_count} possible labels. The labels are **{nice_labels}**."
 
     # Recover the number of epochs from training
-    with open(f'{model_name}/epoch.txt') as f:
-        epochs = int(f.read().strip())
-    os.remove(f'{model_name}/epoch.txt')
-
-    # Remove the training_args file as it may not contain args for the best run
-    os.remove(f'{model_name}/training_args.bin')
+    with open(f'{model_name}/trainer_state.json') as f:
+        trainer_state = json.load(f)
 
     example_output = make_example_output(ner_pipeline)
 
-    hyperparameters = { 'epochs':epochs, **hyperparameters }
+    hyperparameters = { 'epochs':trainer_state['epoch'], **hyperparameters }
     hyperparameter_table = make_hyperparameter_table(hyperparameters)
     
     train_span_report = evaluate_at_span_level(ner_pipeline, train_collection)
@@ -189,10 +167,6 @@ def prepare_model_repo(model_name, base_model, annotated_labels, n_trials, hyper
         
     with open(f"{model_name}/README.md", "w") as f:
         f.write(readme)
-
-    span_evals = do_more_span_evals(model_name, train_collection, val_collection, test_collection)
-    with open(f"{model_name}/span_evals.json", "w") as f:
-        json.dump(span_evals, f, indent=2)
 
     print("="*80)
     print("TEST SPAN REPORT:\n")

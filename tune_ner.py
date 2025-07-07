@@ -2,7 +2,7 @@ from bioc import biocxml
 import gzip
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 from transformers import DataCollatorForTokenClassification
-from transformers import Trainer, TrainingArguments, TrainerCallback, EarlyStoppingCallback
+from transformers import Trainer, TrainingArguments, EarlyStoppingCallback
 from transformers import AutoConfig
 import numpy as np
 from sklearn.metrics import classification_report, f1_score, accuracy_score, precision_score, recall_score
@@ -17,7 +17,6 @@ from model_preparation import prepare_model_repo
 
 def tokenize_and_label(text, spans, tokenizer, label2id, word_based):
 
-    # Tokenize with offset mapping only
     encoded = tokenizer(
         text,
         return_offsets_mapping=True,
@@ -101,43 +100,6 @@ def compute_metrics(eval_pred):
     }
     return results
 
-
-
-class SaveBestModelCallback(TrainerCallback):
-    def __init__(self, save_path="./best_model"):
-        self.save_path = save_path
-        self.best_metric = None
-        self.trainer = None
-        
-    def set_trainer(self, trainer):
-        self.trainer = trainer
-        
-    def on_evaluate(self, args, state, control, metrics=None, **kwargs):
-        assert metrics
-
-        # Get the metric name and comparison direction from TrainingArguments
-        metric_name = self.trainer.args.metric_for_best_model
-        assert metric_name, "Warning: 'metric_for_best_model' not set in TrainingArguments."
-
-        current_metric = metrics.get(metric_name)
-        assert current_metric, f"Warning: Metric '{metric_name}' not found in evaluation metrics."
-
-        greater_is_better = self.trainer.args.greater_is_better
-
-        is_better = (
-            self.best_metric is None or
-            (greater_is_better and current_metric > self.best_metric) or
-            (not greater_is_better and current_metric < self.best_metric)
-        )
-
-        if is_better:
-            self.best_metric = current_metric
-            print(f"\n\nNew best model found! {metric_name} = {current_metric:.4f} at epoch {state.epoch:.0f}. Saving to {self.save_path}\n")
-            self.trainer.save_model(self.save_path)
-            with open(f'{self.save_path}/epoch.txt','w') as f:
-                f.write(f"{state.epoch:.0f}")
-
-
 def run_classification_report(trainer, dataset, id2label, labels):
 
     results = trainer.predict(dataset)
@@ -157,7 +119,7 @@ def run_classification_report(trainer, dataset, id2label, labels):
 
     return report_dict
 
-def train_and_tune_model(base_model, model_name, annotated_labels, train_collection, val_collection, test_collection, n_trials, wandb_name, word_based):
+def train_and_tune_model(base_model, model_name, annotated_labels, train_collection, val_collection, test_collection, max_epochs, n_trials, wandb_name, word_based):
     
     labels = ['O'] + [ f'{prefix}-{label}' for label in annotated_labels for prefix in ['B','I'] ]
     id2label = { idx:label for idx,label in enumerate(labels) }
@@ -183,15 +145,11 @@ def train_and_tune_model(base_model, model_name, annotated_labels, train_collect
 
     if wandb_name:
         os.environ["WANDB_PROJECT"] = wandb_name
-
-    tokenizer.save_pretrained(model_name)
     
     early_stopping_callback = EarlyStoppingCallback(
         early_stopping_patience=3,
         early_stopping_threshold=0.001
     )
-    
-    save_best_model_callback = SaveBestModelCallback(model_name)
     
     unique_info = f'{socket.gethostname()}_{os.getpid()}'
     tmp_model_dir = f"tmp_ner_{unique_info}"
@@ -203,8 +161,9 @@ def train_and_tune_model(base_model, model_name, annotated_labels, train_collect
         metric_for_best_model="eval_macro_f1",
         load_best_model_at_end=True,
         greater_is_better=True,
+        save_total_limit=2,
         seed=42,
-        num_train_epochs=32,
+        num_train_epochs=max_epochs,
         report_to=("wandb" if wandb_name else "none")
     )
 
@@ -228,10 +187,8 @@ def train_and_tune_model(base_model, model_name, annotated_labels, train_collect
         eval_dataset=val_dataset,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
-        callbacks=[early_stopping_callback, save_best_model_callback],
+        callbacks=[early_stopping_callback],
     )
-    
-    save_best_model_callback.set_trainer(trainer)
 
     best_trial = trainer.hyperparameter_search(
         hp_space=hp_space,
@@ -241,8 +198,18 @@ def train_and_tune_model(base_model, model_name, annotated_labels, train_collect
         direction="maximize",
     )
 
+    checkpoints = os.listdir(f'{tmp_model_dir}/run-{best_trial.run_id}')
+    assert len(checkpoints) == 1
+    
+    best_trial_checkpoint_dir = f'{tmp_model_dir}/run-{best_trial.run_id}/{checkpoints[0]}'
+    print(f"{best_trial_checkpoint_dir=}")
+
+    assert os.path.isdir(best_trial_checkpoint_dir)
+    shutil.copytree(best_trial_checkpoint_dir, model_name)
+    tokenizer.save_pretrained(model_name)
+    
     # Remove temporary directory
-    shutil.rmtree(tmp_model_dir)
+    # shutil.rmtree(tmp_model_dir)
 
     # Load up the best model
     trainer.model = AutoModelForTokenClassification.from_pretrained(model_name).to(trainer.args.device)
@@ -258,8 +225,9 @@ def main():
     parser.add_argument('--train_corpus',type=str,required=True,help='Gzipped BioC XML corpus for training')
     parser.add_argument('--val_corpus',type=str,required=True,help='Gzipped BioC XML corpus for validation')
     parser.add_argument('--test_corpus',type=str,required=True,help='Gzipped BioC XML corpus for testing')
-    parser.add_argument('--base_model',type=str,required=False,default='microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract',help='Base BERT model to train from')
+    parser.add_argument('--base_model',type=str,required=False,default='microsoft/BiomedNLP-BiomedBERT-base-uncased-abstract-fulltext',help='Base BERT model to train from')
     parser.add_argument('--n_trials',type=int,required=True,help='Number of trials to run when tuning')
+    parser.add_argument('--max_epochs',type=int,required=False,default=32,help='Maximum number of epochs to run (as early stopping is used)')
     parser.add_argument('--wandb_name',type=str,required=False,help="Project name for wandb (or don't use wandb if not provided)")
     parser.add_argument('--model_name',type=str,required=True,help='Name of model to save (and output directory)')
     parser.add_argument('--model_card_template',type=str,required=True,help='Markdown file with template of model_card')
@@ -277,7 +245,7 @@ def main():
     
     annotated_labels = sorted(set( anno.infons['label'] for doc in train_collection.documents+val_collection.documents+test_collection.documents for passage in doc.passages for anno in passage.annotations ))
 
-    best_hyperparameters, train_token_report, val_token_report, test_token_report = train_and_tune_model(args.base_model, args.model_name, annotated_labels, train_collection, val_collection, test_collection, args.n_trials, args.wandb_name, bool(args.word_based))
+    best_hyperparameters, train_token_report, val_token_report, test_token_report = train_and_tune_model(args.base_model, args.model_name, annotated_labels, train_collection, val_collection, test_collection, args.max_epochs, args.n_trials, args.wandb_name, bool(args.word_based))
     
     prepare_model_repo(args.model_name, args.base_model, annotated_labels, args.n_trials, best_hyperparameters, train_collection, val_collection, test_collection, train_token_report, val_token_report, test_token_report, args.model_card_template, args.dataset_info, bool(args.word_based))
 

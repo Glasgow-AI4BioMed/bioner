@@ -161,7 +161,7 @@ def train_and_tune_model(base_model, model_name, annotated_labels, train_collect
         metric_for_best_model="eval_macro_f1",
         load_best_model_at_end=True,
         greater_is_better=True,
-        save_total_limit=2,
+        save_total_limit=0,
         seed=42,
         num_train_epochs=max_epochs,
         report_to=("wandb" if wandb_name else "none")

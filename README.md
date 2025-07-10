@@ -56,6 +56,8 @@ The sections below provide the commands to preprocess and tune the model. More d
 
 #### MedMentions ST21pv
 
+We use the 2017AA full release of UMLS to map entity concept identifiers to semantic types, and do not use the semantic types in MedMentions directly. You would need to change the path in the command below to point towards your local copy of the MRSTY.RRF file.
+
 ```bash
 # Preprocess the data
 python prepare_medmentions.py --umls_mrsty ~/umls/2017AA-full/META/MRSTY.RRF --medmentions_dir corpora_sources/medmentions/st21pv --semantic_groups corpora_sources/medmentions/SemGroups.txt --out_train datasets/medmentions_st21pv_train.bioc.xml.gz --out_val datasets/medmentions_st21pv_val.bioc.xml.gz --out_test datasets/medmentions_st21pv_test.bioc.xml.gz
@@ -65,6 +67,8 @@ python tune_ner.py --train_corpus datasets/medmentions_st21pv_train.bioc.xml.gz 
 ```
 
 #### MedMentions ST21pv (finegrain)
+
+This version uses the fine-grained types (instead of the semantic groups). And as above, you would need to change the path in the command below to point towards your local copy of the MRSTY.RRF file.
 
 ```bash
 # Preprocess the data

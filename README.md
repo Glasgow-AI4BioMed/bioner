@@ -22,13 +22,13 @@ ner_pipeline("EGFR T790M mutations have been known to affect treatment outcomes 
 
 | Model | Entity Types | Entity Count |
 |-------|--------------|--------------|
-| [medmentions_st21pv](https://huggingface.co/Glasgow-AI4BioMed/bioner_medmentions_st21pv) | A variety of broad biomedical concept categories |              |
-| [medmentions_st21pv_finegrain](https://huggingface.co/Glasgow-AI4BioMed/bioner_medmentions_st21pv_finegrain)      | A large number of specific biomedical categories |              |
-| [ncbi_disease](https://huggingface.co/Glasgow-AI4BioMed/bioner_ncbi_disease) | Diseases |              |
-| [nlmchem](https://huggingface.co/Glasgow-AI4BioMed/bioner_nlmchem) | Chemicals |              |
-| [bc5cdr](https://huggingface.co/Glasgow-AI4BioMed/bioner_bc5cdr) | Chemicals and diseases |              |
-| [tmvar3](https://huggingface.co/Glasgow-AI4BioMed/bioner_tmvar3) | Mutations (plus genes, species, etc) |              |
-| [gnormplus](https://huggingface.co/Glasgow-AI4BioMed/bioner_gnormplus) | Genes and gene families |              |
+| [medmentions_st21pv](https://huggingface.co/Glasgow-AI4BioMed/bioner_medmentions_st21pv) | A variety of broad biomedical concept categories | 14 |
+| [medmentions_st21pv_finegrain](https://huggingface.co/Glasgow-AI4BioMed/bioner_medmentions_st21pv_finegrain)      | A large number of specific biomedical categories | 91 |
+| [ncbi_disease](https://huggingface.co/Glasgow-AI4BioMed/bioner_ncbi_disease) | Diseases | 2 |
+| [nlmchem](https://huggingface.co/Glasgow-AI4BioMed/bioner_nlmchem) | Chemicals | 1 |
+| [bc5cdr](https://huggingface.co/Glasgow-AI4BioMed/bioner_bc5cdr) | Chemicals and diseases | 2 |
+| [tmvar3](https://huggingface.co/Glasgow-AI4BioMed/bioner_tmvar3) | Mutations (plus genes, species, etc) | 10 |
+| [gnormplus](https://huggingface.co/Glasgow-AI4BioMed/bioner_gnormplus) | Genes and gene families | 3 |
 
 ## 🛠️ Building the Models
 
